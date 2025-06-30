@@ -35,7 +35,8 @@ RUN apk add --no-cache \
 # Make sure PHP 8.4 is the default and properly configured
 RUN ln -sf /usr/bin/php84 /usr/bin/php && \
     ln -sf /etc/php84 /etc/php && \
-    php84 --version
+    php84 --version && \
+    php84 -m | grep -E "(bcmath|ctype|dom|simplexml|fileinfo|xml)"
 
 # Configure nginx - http
 COPY docker/app/config/nginx.conf /etc/nginx/nginx.conf
@@ -59,8 +60,9 @@ RUN php84 /usr/bin/composer install --no-dev --optimize-autoloader --no-interact
 # Now copy the rest of the application (excluding vendor if it exists locally)
 COPY --chown=abc:abc . /var/www/
 
-# Remove any local vendor directory that might have been copied and reinstall
-RUN rm -rf vendor && php84 /usr/bin/composer install --no-dev --optimize-autoloader --no-interaction
+# Ensure vendor directory exists and has correct permissions
+RUN php84 /usr/bin/composer install --no-dev --optimize-autoloader --no-interaction && \
+    chown -R abc:abc /var/www/vendor
 
 # Application setup
 RUN touch /var/www/.env
