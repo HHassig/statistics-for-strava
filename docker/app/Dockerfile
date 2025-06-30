@@ -32,6 +32,10 @@ RUN apk add --no-cache \
   php84-zip \
   composer
 
+# Make sure PHP 8.4 is the default and properly configured
+RUN ln -sf /usr/bin/php84 /usr/bin/php && \
+    ln -sf /etc/php84 /etc/php
+
 # Configure nginx - http
 COPY docker/app/config/nginx.conf /etc/nginx/nginx.conf
 
@@ -40,7 +44,6 @@ COPY docker/app/config/conf.d /etc/nginx/conf.d/
 
 # Configure PHP-FPM
 ENV PHP_INI_DIR="/etc/php84"
-RUN ln -sf /usr/bin/php84 /usr/bin/php
 COPY docker/app/config/fpm-pool.conf ${PHP_INI_DIR}/php-fpm.d/www.conf
 COPY docker/app/config/php.ini ${PHP_INI_DIR}/conf.d/custom.ini
 
