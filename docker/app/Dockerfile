@@ -36,7 +36,8 @@ RUN apk add --no-cache \
 RUN ln -sf /usr/bin/php84 /usr/bin/php && \
     ln -sf /etc/php84 /etc/php && \
     php84 --version && \
-    php84 -m | grep -E "(bcmath|ctype|dom|simplexml|fileinfo|xml)"
+    php84 -m | grep -E "(bcmath|ctype|dom|simplexml|fileinfo|xml)" && \
+    sed -i 's|/usr/bin/php83|/usr/bin/php84|g' /usr/bin/composer
 
 # Configure nginx - http
 COPY docker/app/config/nginx.conf /etc/nginx/nginx.conf
@@ -55,14 +56,15 @@ COPY docker/root /
 COPY composer.json composer.lock ./
 
 # Install PHP dependencies BEFORE copying the rest of the application
-RUN php84 /usr/bin/composer install --no-dev --optimize-autoloader --no-interaction
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Now copy the rest of the application (excluding vendor if it exists locally)
 COPY --chown=abc:abc . /var/www/
 
 # Ensure vendor directory exists and has correct permissions
-RUN php84 /usr/bin/composer install --no-dev --optimize-autoloader --no-interaction && \
-    chown -R abc:abc /var/www/vendor
+RUN composer install --no-dev --optimize-autoloader --no-interaction && \
+    ls -la /var/www/ && \
+    if [ -d "/var/www/vendor" ]; then chown -R abc:abc /var/www/vendor; fi
 
 # Application setup
 RUN touch /var/www/.env
