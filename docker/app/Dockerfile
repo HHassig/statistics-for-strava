@@ -53,17 +53,18 @@ COPY docker/app/config/php.ini ${PHP_INI_DIR}/conf.d/custom.ini
 
 COPY docker/root /
 
-# Copy composer files and bin/ directory first (for better Docker layer caching)
-COPY composer.json composer.lock bin/ /var/www/
+# Copy composer files first (for better Docker layer caching)
+COPY composer.json composer.lock ./
 
-# Install PHP dependencies BEFORE copying the rest of the application
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+# Install PHP dependencies without running scripts
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
 # Now copy the rest of the application (excluding vendor if it exists locally)
 COPY --chown=abc:abc . /var/www/
 
-# Ensure vendor directory exists and has correct permissions
-RUN chown -R abc:abc /var/www/vendor
+# Ensure vendor directory exists and has correct permissions, then clear cache
+RUN chown -R abc:abc /var/www/vendor && \
+    php bin/console cache:clear --no-warmup --env=prod
 
 # Application setup
 RUN touch /var/www/.env
