@@ -62,12 +62,15 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction --no-script
 # Now copy the rest of the application (excluding vendor if it exists locally)
 COPY --chown=abc:abc . /var/www/
 
+# Create .env file with minimal configuration and set permissions
+RUN echo "APP_ENV=prod" > /var/www/.env && \
+    chown abc:abc /var/www/.env
+
 # Ensure vendor directory exists and has correct permissions, then clear cache
 RUN chown -R abc:abc /var/www/vendor && \
     php bin/console cache:clear --no-warmup --env=prod
 
 # Application setup
-RUN touch /var/www/.env
 RUN rm -Rf docker
 RUN mkdir -p /var/www/var/cache/dev /var/www/var/log
 RUN chown -R abc:abc /var/www/var/cache/dev /var/www/var/log
