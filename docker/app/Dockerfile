@@ -46,18 +46,23 @@ COPY docker/app/config/php.ini ${PHP_INI_DIR}/conf.d/custom.ini
 
 COPY docker/root /
 
-# Add application
-COPY . /var/www/
+# Copy composer files first (for better Docker layer caching)
+COPY composer.json composer.lock ./
 
-# Install PHP dependencies
+# Install PHP dependencies BEFORE copying the rest of the application
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
+# Now copy the rest of the application (excluding vendor if it exists locally)
+COPY --chown=abc:abc . /var/www/
+
+# Remove any local vendor directory that might have been copied
+RUN rm -rf vendor && composer install --no-dev --optimize-autoloader --no-interaction
+
+# Application setup
 RUN touch /var/www/.env
 RUN rm -Rf docker
-RUN mkdir -p /var/www/var/cache/dev
-RUN mkdir -p /var/www/var/log
-RUN chown -R abc:abc /var/www/var/cache/dev
-RUN chown -R abc:abc /var/www/var/log
+RUN mkdir -p /var/www/var/cache/dev /var/www/var/log
+RUN chown -R abc:abc /var/www/var/cache/dev /var/www/var/log
 
 # Keep uid/gid same as pre-lsio for backwards compatibility
 ENV PUID=65534
