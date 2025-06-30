@@ -3,7 +3,7 @@ FROM ghcr.io/linuxserver/baseimage-alpine:3.21
 # Setup document root
 WORKDIR /var/www
 
-# Install packages and remove default server definition
+# Install packages including composer
 RUN apk add --no-cache \
   bash \
   curl \
@@ -29,10 +29,12 @@ RUN apk add --no-cache \
   php84-xml \
   php84-xmlreader \
   php84-xmlwriter \
-  php84-zip
+  php84-zip \
+  composer
 
 # Configure nginx - http
 COPY docker/app/config/nginx.conf /etc/nginx/nginx.conf
+
 # Configure nginx - default server
 COPY docker/app/config/conf.d /etc/nginx/conf.d/
 
@@ -46,6 +48,10 @@ COPY docker/root /
 
 # Add application
 COPY . /var/www/
+
+# Install PHP dependencies
+RUN composer install --no-dev --optimize-autoloader --no-interaction
+
 RUN touch /var/www/.env
 RUN rm -Rf docker
 RUN mkdir -p /var/www/var/cache/dev
